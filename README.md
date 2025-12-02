@@ -164,6 +164,35 @@ The direct Python path approach is more reliable because:
 - It avoids potential issues with `uv run` trying to install the project as a package
 - It's simpler and more straightforward for MCP server configurations
 
+#### Integration via npx (npm package) 📦
+
+**Coming soon!** Once published to npm, users can use with `npx`:
+
+```json
+{
+  "mcpServers": {
+    "openproject": {
+      "command": "npx",
+      "args": ["-y", "@your-org/server-openproject"],
+      "env": {
+        "OPENPROJECT_API_URL": "https://your-instance.openproject.com",
+        "OPENPROJECT_API_KEY": "your-api-key-here",
+        "OPENPROJECT_PROXY": "http://proxy:3128",
+        "LOG_LEVEL": "INFO"
+      }
+    }
+  }
+}
+```
+
+**Benefits:**
+- No manual installation needed
+- Auto-updates to latest version
+- Simpler configuration
+- Consistent with other MCP servers
+
+**For package maintainers**: See [NPM_PUBLISH_GUIDE.md](NPM_PUBLISH_GUIDE.md) for publish instructions.
+
 ### Option 2: Cloud Deployment (FastMCP Cloud) ☁️
 
 Deploy to FastMCP Cloud for centralized access across your organization. This eliminates the need for each user to install Python and run the server locally.

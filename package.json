@@ -1,0 +1,35 @@
+{
+  "name": "@your-org/server-openproject",
+  "version": "1.0.0",
+  "description": "OpenProject MCP Server - Model Context Protocol integration",
+  "type": "module",
+  "bin": {
+    "server-openproject": "./bin/run.js"
+  },
+  "scripts": {
+    "prepublishOnly": "echo 'Installing Python dependencies...' && python -m pip install -r requirements.txt"
+  },
+  "keywords": [
+    "mcp",
+    "openproject",
+    "model-context-protocol"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/openproject-mcp-server"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "openproject-mcp-fastmcp.py",
+    "pyproject.toml",
+    "requirements.txt",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {}
+}
