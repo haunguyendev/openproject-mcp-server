@@ -386,3 +386,97 @@ async def list_priorities() -> str:
 
     except Exception as e:
         return format_error(f"Failed to list work package priorities: {str(e)}")
+
+
+@mcp.tool
+async def assign_work_package(work_package_id: int, assignee_id: int) -> str:
+    """Assign a work package (task) to a user.
+
+    This is a convenience tool that makes it easy to assign tasks to team members.
+    It's equivalent to updating the work package's assignee field.
+
+    Args:
+        work_package_id: ID of the work package to assign
+        assignee_id: ID of the user to assign the work package to
+
+    Returns:
+        Success message with updated work package details
+
+    Example:
+        To assign work package #123 to user #7:
+        {
+            "work_package_id": 123,
+            "assignee_id": 7
+        }
+    """
+    try:
+        client = get_client()
+
+        # Update work package with new assignee
+        data = {"assignee_id": assignee_id}
+        result = await client.update_work_package(work_package_id, data)
+
+        # Format success response
+        wp_id = result.get("id")
+        wp_subject = result.get("subject")
+
+        text = format_success(f"Work package #{wp_id} assigned successfully!\n\n")
+        text += f"**Subject**: {wp_subject}\n"
+
+        embedded = result.get("_embedded", {})
+        if "assignee" in embedded:
+            assignee_name = embedded["assignee"].get("name", "Unknown")
+            text += f"**Assigned to**: {assignee_name}\n"
+        
+        if "type" in embedded:
+            text += f"**Type**: {embedded['type'].get('name', 'Unknown')}\n"
+        if "status" in embedded:
+            text += f"**Status**: {embedded['status'].get('name', 'Unknown')}\n"
+        if "priority" in embedded:
+            text += f"**Priority**: {embedded['priority'].get('name', 'Unknown')}\n"
+
+        if result.get('dueDate'):
+            text += f"**Due Date**: {result['dueDate']}\n"
+
+        return text
+
+    except Exception as e:
+        return format_error(f"Failed to assign work package: {str(e)}")
+
+
+@mcp.tool
+async def unassign_work_package(work_package_id: int) -> str:
+    """Unassign a work package (remove assignee from task).
+
+    This removes the current assignee from a work package, making it unassigned.
+
+    Args:
+        work_package_id: ID of the work package to unassign
+
+    Returns:
+        Success message confirming the work package is now unassigned
+    """
+    try:
+        client = get_client()
+
+        # Update work package with null assignee (unassign)
+        # Note: We need to use the API directly since setting to None might not work
+        result = await client.update_work_package(work_package_id, {"assignee_id": None})
+
+        wp_id = result.get("id")
+        wp_subject = result.get("subject")
+
+        text = format_success(f"Work package #{wp_id} unassigned successfully!\n\n")
+        text += f"**Subject**: {wp_subject}\n"
+        text += f"**Assigned to**: Unassigned\n"
+
+        embedded = result.get("_embedded", {})
+        if "type" in embedded:
+            text += f"**Type**: {embedded['type'].get('name', 'Unknown')}\n"
+        if "status" in embedded:
+            text += f"**Status**: {embedded['status'].get('name', 'Unknown')}\n"
+
+        return text
+
+    except Exception as e:
+        return format_error(f"Failed to unassign work package: {str(e)}")
