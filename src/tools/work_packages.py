@@ -267,3 +267,122 @@ async def update_work_package(input: UpdateWorkPackageInput) -> str:
 
     except Exception as e:
         return format_error(f"Failed to update work package: {str(e)}")
+
+
+@mcp.tool
+async def delete_work_package(work_package_id: int) -> str:
+    """Delete a work package (task).
+
+    Args:
+        work_package_id: ID of the work package to delete
+
+    Returns:
+        Success or error message
+    """
+    try:
+        client = get_client()
+
+        success = await client.delete_work_package(work_package_id)
+
+        if success:
+            return format_success(f"Work package #{work_package_id} deleted successfully")
+        else:
+            return format_error(f"Failed to delete work package #{work_package_id}")
+
+    except Exception as e:
+        return format_error(f"Failed to delete work package: {str(e)}")
+
+
+@mcp.tool
+async def list_types(project_id: Optional[int] = None) -> str:
+    """List available work package types (Bug, Task, Feature, etc.).
+
+    Args:
+        project_id: Optional project ID to filter types by project
+
+    Returns:
+        List of work package types with IDs
+    """
+    try:
+        client = get_client()
+
+        result = await client.get_types(project_id)
+        types = result.get("_embedded", {}).get("elements", [])
+
+        if not types:
+            return "No work package types found."
+
+        text = "✅ **Available Work Package Types:**\n\n"
+        for type_item in types:
+            text += f"- **{type_item.get('name', 'Unnamed')}** (ID: {type_item.get('id', 'N/A')})\n"
+            if type_item.get("isDefault"):
+                text += "  ✓ Default type\n"
+            if type_item.get("isMilestone"):
+                text += "  ✓ Milestone\n"
+
+        return text
+
+    except Exception as e:
+        return format_error(f"Failed to list work package types: {str(e)}")
+
+
+@mcp.tool
+async def list_statuses() -> str:
+    """List available work package statuses (New, In Progress, Closed, etc.).
+
+    Returns:
+        List of work package statuses with IDs and properties
+    """
+    try:
+        client = get_client()
+
+        result = await client.get_statuses()
+        statuses = result.get("_embedded", {}).get("elements", [])
+
+        if not statuses:
+            return "No statuses found."
+
+        text = "✅ **Available Work Package Statuses:**\n\n"
+        for status in statuses:
+            text += f"- **{status.get('name', 'Unnamed')}** (ID: {status.get('id', 'N/A')})\n"
+            text += f"  Position: {status.get('position', 'N/A')}\n"
+            if status.get("isDefault"):
+                text += "  ✓ Default status\n"
+            if status.get("isClosed"):
+                text += "  ✓ Closed status\n"
+
+        return text
+
+    except Exception as e:
+        return format_error(f"Failed to list work package statuses: {str(e)}")
+
+
+@mcp.tool
+async def list_priorities() -> str:
+    """List available work package priorities (Low, Normal, High, Immediate).
+
+    Returns:
+        List of work package priorities with IDs
+    """
+    try:
+        client = get_client()
+
+        result = await client.get_priorities()
+        priorities = result.get("_embedded", {}).get("elements", [])
+
+        if not priorities:
+            return "No priorities found."
+
+        text = "✅ **Available Work Package Priorities:**\n\n"
+        for priority in priorities:
+            text += f"- **{priority.get('name', 'Unnamed')}** (ID: {priority.get('id', 'N/A')})\n"
+            text += f"  Position: {priority.get('position', 'N/A')}\n"
+            if priority.get("isDefault"):
+                text += "  ✓ Default priority\n"
+            if priority.get("isActive"):
+                text += "  ✓ Active\n"
+
+        return text
+
+    except Exception as e:
+        return format_error(f"Failed to list work package priorities: {str(e)}")

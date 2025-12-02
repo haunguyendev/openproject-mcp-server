@@ -60,15 +60,24 @@ def get_client():
     return _client
 
 
-# Import tool modules (decorators auto-register tools)
-# This will be populated as we migrate tools
+# Import ALL tool modules (decorators auto-register tools)
 logger.info("Loading tool modules...")
 
-# Phase 1 tools will be imported here
 try:
-    from src.tools import connection
-    from src.tools import work_packages
-    from src.tools import projects
-    logger.info("✅ Tool modules loaded successfully")
+    # Phase 1: Priority tools (7 tools)
+    from src.tools import connection      # 2 tools: test_connection, check_permissions
+    from src.tools import work_packages   # 7 tools: list, create, update, delete, list_types, list_statuses, list_priorities
+    from src.tools import projects        # 5 tools: list, get, create, update, delete
+
+    # Phase 2: Additional tools (28 tools)
+    from src.tools import users           # 6 tools: list_users, get_user, list_roles, get_role, list_project_members, list_user_projects
+    from src.tools import memberships     # 5 tools: list, get, create, update, delete
+    from src.tools import hierarchy       # 3 tools: set_parent, remove_parent, list_children
+    from src.tools import relations       # 5 tools: create, list, get, update, delete
+    from src.tools import time_entries    # 5 tools: list, create, update, delete, list_activities
+    from src.tools import versions        # 2 tools: list, create
+
+    logger.info("✅ All 40 tool modules loaded successfully")
 except ImportError as e:
-    logger.warning(f"⚠️  Some tool modules not yet created: {e}")
+    logger.warning(f"⚠️  Some tool modules failed to import: {e}")
+    raise
