@@ -84,7 +84,6 @@ async def create_version(input: CreateVersionInput) -> str:
         client = get_client()
 
         data = {
-            "project_id": input.project_id,
             "name": input.name,
         }
 
@@ -97,7 +96,7 @@ async def create_version(input: CreateVersionInput) -> str:
         if input.status:
             data["status"] = input.status
 
-        result = await client.create_version(data)
+        result = await client.create_version(input.project_id, data)
 
         text = format_success("Version created successfully!\n\n")
         text += f"**Name**: {result.get('name', 'N/A')}\n"
