@@ -26,6 +26,7 @@ class CreateWorkPackageInput(BaseModel):
     assignee_id: Optional[int] = Field(None, description="Assignee user ID", gt=0)
     status_id: Optional[int] = Field(None, description="Status ID", gt=0)
     priority_id: Optional[int] = Field(None, description="Priority ID", gt=0)
+    version_id: Optional[int] = Field(None, description="Version/milestone ID to assign work package to", gt=0)
 
 
 class UpdateWorkPackageInput(BaseModel):
@@ -41,6 +42,7 @@ class UpdateWorkPackageInput(BaseModel):
     start_date: Optional[str] = Field(None, description="New start date (YYYY-MM-DD)")
     due_date: Optional[str] = Field(None, description="New due date (YYYY-MM-DD)")
     percentage_done: Optional[int] = Field(None, description="Progress percentage (0-100)", ge=0, le=100)
+    version_id: Optional[int] = Field(None, description="Version/milestone ID to assign work package to", gt=0)
 
 
 @mcp.tool
@@ -143,6 +145,8 @@ async def create_work_package(input: CreateWorkPackageInput) -> str:
             data["priority_id"] = input.priority_id
         if input.assignee_id:
             data["assignee_id"] = input.assignee_id
+        if input.version_id:
+            data["version_id"] = input.version_id
 
         # Add date fields (use camelCase for API)
         if input.start_date:
@@ -225,6 +229,8 @@ async def update_work_package(input: UpdateWorkPackageInput) -> str:
             data["assignee_id"] = input.assignee_id
         if input.percentage_done is not None:
             data["percentage_done"] = input.percentage_done
+        if input.version_id is not None:
+            data["version_id"] = input.version_id
 
         # Add date fields (use camelCase for API)
         if input.start_date is not None:

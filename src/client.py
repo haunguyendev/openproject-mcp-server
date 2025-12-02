@@ -269,6 +269,12 @@ class OpenProjectClient:
             payload["_links"]["assignee"] = {
                 "href": f"/api/v3/users/{data['assignee_id']}"
             }
+        if "version_id" in data:
+            if "_links" not in payload:
+                payload["_links"] = {}
+            payload["_links"]["version"] = {
+                "href": f"/api/v3/versions/{data['version_id']}"
+            }
 
         # Add date fields (ISO 8601 format: YYYY-MM-DD)
         if "startDate" in data:
@@ -468,6 +474,12 @@ class OpenProjectClient:
                 payload["_links"] = {}
             payload["_links"]["assignee"] = {
                 "href": f"/api/v3/users/{data['assignee_id']}"
+            }
+        if "version_id" in data:
+            if "_links" not in payload:
+                payload["_links"] = {}
+            payload["_links"]["version"] = {
+                "href": f"/api/v3/versions/{data['version_id']}"
             }
         if "percentage_done" in data:
             payload["percentageDone"] = data["percentage_done"]
