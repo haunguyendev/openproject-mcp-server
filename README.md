@@ -124,35 +124,71 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 python openproject-mcp-fastmcp.py
 ```
 
-**Note:** If you renamed the file from `openproject_mcp_server.py`, update your configuration accordingly.
+**File Structure:**
+- `openproject-mcp-fastmcp.py` - Stdio transport (for local Claude Desktop)
+- `openproject-mcp-sse.py` - SSE transport (for FastMCP Cloud)
+- `src/` - Core implementation using FastMCP framework
+  - `src/server.py` - FastMCP server initialization
+  - `src/client.py` - OpenProject API client
+  - `src/tools/` - All 40+ MCP tools organized by category
 
 #### Integration with Claude Desktop (Local)
 
 Add this configuration to your Claude Desktop config file:
 
-**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`  
+**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
 ```json
 {
   "mcpServers": {
     "openproject": {
-      "command": "/path/to/your/project/.venv/bin/python",
-      "args": ["/path/to/your/project/openproject-mcp-fastmcp.py"]
+      "command": "uv",
+      "args": [
+        "--directory",
+        "D:\\path\\to\\openproject-mcp-server",
+        "run",
+        "python",
+        "openproject-mcp-fastmcp.py"
+      ],
+      "env": {
+        "OPENPROJECT_URL": "https://your-instance.openproject.com",
+        "OPENPROJECT_API_KEY": "your-api-key-here"
+      }
     }
   }
 }
 ```
 
-**Note:** Replace `/path/to/your/project/` with the actual path to your project directory.
+**Note:** Replace the path with your actual project directory path.
 
-**Alternative with uv (if uv is in your system PATH):**
+**Alternative (using direct Python path):**
 ```json
 {
   "mcpServers": {
     "openproject": {
-      "command": "uv",
-      "args": ["run", "python", "/path/to/your/project/openproject-mcp-fastmcp.py"]
+      "command": "/path/to/your/project/.venv/bin/python",
+      "args": ["/path/to/your/project/openproject-mcp-fastmcp.py"],
+      "env": {
+        "OPENPROJECT_URL": "https://your-instance.openproject.com",
+        "OPENPROJECT_API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}
+```
+
+**Windows path format:**
+```json
+{
+  "mcpServers": {
+    "openproject": {
+      "command": "D:\\path\\to\\project\\.venv\\Scripts\\python.exe",
+      "args": ["D:\\path\\to\\project\\openproject-mcp-fastmcp.py"],
+      "env": {
+        "OPENPROJECT_URL": "https://your-instance.openproject.com",
+        "OPENPROJECT_API_KEY": "your-api-key-here"
+      }
     }
   }
 }
@@ -177,34 +213,52 @@ Deploy to FastMCP Cloud for centralized access across your organization. This el
 
 **Quick Start:**
 
-1. **Update dependencies for SSE transport:**
+1. **Ensure you have the SSE entry point:**
    ```bash
-   uv sync
+   # The project includes openproject-mcp-sse.py for cloud deployment
+   ls openproject-mcp-sse.py
    ```
 
-2. **Deploy to FastMCP Cloud:**
-   ```bash
-   # Install FastMCP CLI
-   pip install fastmcp-cli
+2. **Create/update .fastmcp.yaml config:**
+   ```yaml
+   name: openproject-mcp
+   version: "1.0.0"
+   description: "OpenProject MCP Server for Claude Desktop"
 
-   # Login
+   entry_point: openproject-mcp-sse.py
+
+   runtime:
+     python_version: "3.11"
+
+   environment:
+     - OPENPROJECT_URL
+     - OPENPROJECT_API_KEY
+     - OPENPROJECT_PROXY
+   ```
+
+3. **Deploy to FastMCP Cloud:**
+   ```bash
+   # Install FastMCP CLI (if not installed)
+   pip install fastmcp
+
+   # Login to FastMCP Cloud
    fastmcp login
 
-   # Deploy
+   # Deploy your server
    fastmcp deploy
    ```
 
-3. **Configure environment variables** on FastMCP Cloud dashboard:
-   - `OPENPROJECT_URL`
-   - `OPENPROJECT_API_KEY`
-   - `OPENPROJECT_PROXY` (if needed)
+4. **Configure environment variables** on FastMCP Cloud dashboard:
+   - `OPENPROJECT_URL`: Your OpenProject instance URL
+   - `OPENPROJECT_API_KEY`: Your API key
+   - `OPENPROJECT_PROXY`: (Optional) Proxy URL if needed
 
-4. **Users connect via Claude Desktop** with SSE transport:
+5. **Users connect via Claude Desktop** with SSE transport:
    ```json
    {
      "mcpServers": {
        "openproject": {
-         "url": "https://your-org.fastmcp.cloud/openproject-mcp",
+         "url": "https://mcp.fastmcp.com/sse/openproject-mcp",
          "transport": "sse"
        }
      }
@@ -212,8 +266,9 @@ Deploy to FastMCP Cloud for centralized access across your organization. This el
    ```
 
 **📚 Detailed Documentation:**
-- [FastMCP Cloud Deployment Guide (English)](FASTMCP_CLOUD_DEPLOYMENT.md)
-- [Hướng dẫn kết nối Cloud (Tiếng Việt)](HUONG_DAN_KET_NOI_CLOUD.md)
+- [Quick Start Guide](QUICK_START_CLOUD.md) - Fast setup in 5 minutes
+- [FastMCP Cloud Deployment Guide (English)](FASTMCP_CLOUD_DEPLOYMENT.md) - Comprehensive guide
+- [Hướng dẫn kết nối Cloud (Tiếng Việt)](HUONG_DAN_KET_NOI_CLOUD.md) - Vietnamese guide
 
 For comprehensive deployment instructions, troubleshooting, and best practices, see the guides above.
 
