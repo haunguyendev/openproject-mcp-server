@@ -48,6 +48,7 @@ class UpdateWorkPackageInput(BaseModel):
 @mcp.tool
 async def list_work_packages(
     project_id: Optional[int] = None,
+    assignee_id: Optional[int] = None,
     active_only: bool = True,
     offset: int = 0,
     page_size: int = 20
@@ -58,6 +59,7 @@ async def list_work_packages(
 
     Args:
         project_id: Optional project ID to filter work packages by project
+        assignee_id: Optional user ID to filter work packages by assignee
         active_only: If True, only show work packages with open status (default: True)
         offset: Starting index for pagination (default: 0)
         page_size: Number of results per page (default: 20, max: 100)
@@ -69,10 +71,15 @@ async def list_work_packages(
         client = get_client()
 
         # Build filters
-        filters = None
+        filters_list = []
         if active_only:
             # Filter for open statuses (not closed)
-            filters = json.dumps([{"status": {"operator": "o", "values": []}}])
+            filters_list.append({"status": {"operator": "o", "values": []}})
+        if assignee_id:
+            # Filter by assignee
+            filters_list.append({"assignee": {"operator": "=", "values": [str(assignee_id)]}})
+
+        filters = json.dumps(filters_list) if filters_list else None
 
         # Validate pagination parameters
         if offset < 0:

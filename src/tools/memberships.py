@@ -41,16 +41,7 @@ async def list_memberships(
     try:
         client = get_client()
 
-        import json
-        filters = []
-        if project_id:
-            filters.append({"project": {"operator": "=", "values": [str(project_id)]}})
-        if user_id:
-            filters.append({"principal": {"operator": "=", "values": [str(user_id)]}})
-
-        filters_json = json.dumps(filters) if filters else None
-
-        result = await client.get_memberships(filters_json)
+        result = await client.get_memberships(project_id=project_id, user_id=user_id)
         memberships = result.get("_embedded", {}).get("elements", [])
 
         if not memberships:
@@ -58,16 +49,28 @@ async def list_memberships(
 
         text = f"✅ **Found {len(memberships)} membership(s):**\n\n"
         for member in memberships:
-            text += f"**Membership #{member.get('id', 'N/A')}**\n"
+            links = member.get("_links", {})
 
-            embedded = member.get("_embedded", {})
-            if "project" in embedded:
-                text += f"  Project: {embedded['project'].get('name', 'Unknown')}\n"
-            if "principal" in embedded:
-                text += f"  User/Group: {embedded['principal'].get('name', 'Unknown')}\n"
-            if "roles" in embedded:
-                roles = [r.get("name", "Unknown") for r in embedded["roles"]]
-                text += f"  Roles: {', '.join(roles)}\n"
+            # Get principal (user/group) information from _links
+            principal_link = links.get("principal", {})
+            principal_name = principal_link.get("title", "Unknown")
+            # Extract user ID from href: "/api/v3/users/7" -> 7
+            principal_href = principal_link.get("href", "")
+            principal_id = principal_href.split("/")[-1] if principal_href else "N/A"
+
+            text += f"- **{principal_name}** (User ID: {principal_id})\n"
+
+            # Get project information (only if not filtered by single project)
+            if not project_id:
+                project_link = links.get("project", {})
+                project_name = project_link.get("title", "Unknown")
+                text += f"  Project: {project_name}\n"
+
+            # Get roles from _links
+            role_links = links.get("roles", [])
+            if role_links:
+                role_names = [r.get("title", "Unknown") for r in role_links]
+                text += f"  Roles: {', '.join(role_names)}\n"
 
             text += "\n"
 
@@ -93,14 +96,23 @@ async def get_membership(membership_id: int) -> str:
 
         text = f"✅ **Membership #{member.get('id')}**\n\n"
 
-        embedded = member.get("_embedded", {})
-        if "project" in embedded:
-            text += f"**Project**: {embedded['project'].get('name', 'Unknown')}\n"
-        if "principal" in embedded:
-            text += f"**User/Group**: {embedded['principal'].get('name', 'Unknown')}\n"
-        if "roles" in embedded:
-            roles = [r.get("name", "Unknown") for r in embedded["roles"]]
-            text += f"**Roles**: {', '.join(roles)}\n"
+        links = member.get("_links", {})
+
+        # Get project from _links
+        project_link = links.get("project", {})
+        if project_link:
+            text += f"**Project**: {project_link.get('title', 'Unknown')}\n"
+
+        # Get principal (user/group) from _links
+        principal_link = links.get("principal", {})
+        if principal_link:
+            text += f"**User/Group**: {principal_link.get('title', 'Unknown')}\n"
+
+        # Get roles from _links
+        role_links = links.get("roles", [])
+        if role_links:
+            role_names = [r.get("title", "Unknown") for r in role_links]
+            text += f"**Roles**: {', '.join(role_names)}\n"
 
         if member.get('createdAt'):
             text += f"**Created**: {member['createdAt']}\n"

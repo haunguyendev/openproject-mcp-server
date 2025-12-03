@@ -367,7 +367,7 @@ class OpenProjectClient:
         # Use filters instead of path-based filtering for better compatibility
         filters = []
         if project_id:
-            filters.append({"project": {"operator": "=", "values": [str(project_id)]}})
+            filters.append({"project": {"operator": "=", "values": [project_id]}})
         if user_id:
             filters.append({"user": {"operator": "=", "values": [str(user_id)]}})
 
