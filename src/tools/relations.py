@@ -65,7 +65,7 @@ async def create_work_package_relation(input: CreateRelationInput) -> str:
         if input.description:
             data["description"] = input.description
 
-        result = await client.create_relation(data)
+        result = await client.create_work_package_relation(data)
 
         text = format_success(f"Relation created successfully!\n\n")
         text += f"**ID**: #{result.get('id', 'N/A')}\n"
@@ -101,7 +101,10 @@ async def list_work_package_relations(work_package_id: int) -> str:
     try:
         client = get_client()
 
-        result = await client.get_work_package_relations(work_package_id)
+        # Get relations for a specific work package
+        import json
+        filters = json.dumps([{"involved": {"operator": "=", "values": [str(work_package_id)]}}])
+        result = await client.list_work_package_relations(filters)
         relations = result.get("_embedded", {}).get("elements", [])
 
         if not relations:
@@ -143,7 +146,7 @@ async def get_work_package_relation(relation_id: int) -> str:
     """
     try:
         client = get_client()
-        rel = await client.get_relation(relation_id)
+        rel = await client.get_work_package_relation(relation_id)
 
         text = f"✅ **Relation #{rel.get('id')}**\n\n"
         text += f"**Type**: {rel.get('type', 'Unknown')}\n"
@@ -188,7 +191,7 @@ async def update_work_package_relation(input: UpdateRelationInput) -> str:
         if not update_data:
             return format_error("No fields provided to update")
 
-        result = await client.update_relation(input.relation_id, update_data)
+        result = await client.update_work_package_relation(input.relation_id, update_data)
 
         text = format_success(f"Relation #{input.relation_id} updated successfully!\n\n")
         text += f"**Type**: {result.get('type', 'Unknown')}\n"
@@ -217,7 +220,7 @@ async def delete_work_package_relation(relation_id: int) -> str:
     try:
         client = get_client()
 
-        success = await client.delete_relation(relation_id)
+        success = await client.delete_work_package_relation(relation_id)
 
         if success:
             return format_success(f"Relation #{relation_id} deleted successfully")
