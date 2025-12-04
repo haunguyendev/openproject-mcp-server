@@ -47,17 +47,25 @@ def format_work_package_list(work_packages: List[Dict]) -> str:
     for wp in work_packages:
         text += f"- **{wp.get('subject', 'No title')}** (#{wp.get('id', 'N/A')})\n"
 
-        # Extract embedded data
+        # Extract data from both _embedded and _links (OpenProject uses both)
         embedded = wp.get("_embedded", {})
+        links = wp.get("_links", {})
+
+        # Type, Status, Priority are in _embedded
         if "type" in embedded:
             text += f"  Type: {embedded['type'].get('name', 'Unknown')}\n"
         if "status" in embedded:
             text += f"  Status: {embedded['status'].get('name', 'Unknown')}\n"
         if "priority" in embedded:
             text += f"  Priority: {embedded['priority'].get('name', 'Unknown')}\n"
-        if "assignee" in embedded:
-            assignee = embedded['assignee']
-            text += f"  Assignee: {assignee.get('name', 'Unassigned')}\n"
+
+        # Assignee is in _links
+        assignee_link = links.get("assignee")
+        if assignee_link:
+            assignee_name = assignee_link.get("title", "Unknown")
+            text += f"  Assignee: {assignee_name}\n"
+        else:
+            text += f"  Assignee: Unassigned\n"
 
         # Date fields
         if wp.get('startDate'):
@@ -81,21 +89,28 @@ def format_work_package_detail(wp: Dict) -> str:
     text = f"✅ Work Package #{wp.get('id')}\n\n"
     text += f"**Subject**: {wp.get('subject', 'No title')}\n\n"
 
-    # Extract embedded data
+    # Extract data from both _embedded and _links
     embedded = wp.get("_embedded", {})
+    links = wp.get("_links", {})
 
+    # Type, Status, Priority, Project are in _embedded
     if "type" in embedded:
         text += f"**Type**: {embedded['type'].get('name', 'Unknown')}\n"
     if "status" in embedded:
         text += f"**Status**: {embedded['status'].get('name', 'Unknown')}\n"
     if "priority" in embedded:
         text += f"**Priority**: {embedded['priority'].get('name', 'Unknown')}\n"
-    if "assignee" in embedded:
-        assignee = embedded['assignee']
-        text += f"**Assignee**: {assignee.get('name', 'Unassigned')}\n"
     if "project" in embedded:
         project = embedded['project']
         text += f"**Project**: {project.get('name', 'Unknown')}\n"
+
+    # Assignee is in _links
+    assignee_link = links.get("assignee")
+    if assignee_link:
+        assignee_name = assignee_link.get("title", "Unknown")
+        text += f"**Assignee**: {assignee_name}\n"
+    else:
+        text += f"**Assignee**: Unassigned\n"
 
     # Dates
     if wp.get('startDate'):

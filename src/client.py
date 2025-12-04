@@ -367,7 +367,7 @@ class OpenProjectClient:
         # Use filters instead of path-based filtering for better compatibility
         filters = []
         if project_id:
-            filters.append({"project": {"operator": "=", "values": [str(project_id)]}})
+            filters.append({"project": {"operator": "=", "values": [project_id]}})
         if user_id:
             filters.append({"user": {"operator": "=", "values": [str(user_id)]}})
 
@@ -483,6 +483,17 @@ class OpenProjectClient:
             }
         if "percentage_done" in data:
             payload["percentageDone"] = data["percentage_done"]
+        if "parent_id" in data:
+            if "_links" not in payload:
+                payload["_links"] = {}
+            if data["parent_id"] is None:
+                # Remove parent
+                payload["_links"]["parent"] = {"href": None}
+            else:
+                # Set parent
+                payload["_links"]["parent"] = {
+                    "href": f"/api/v3/work_packages/{data['parent_id']}"
+                }
 
         # Add date fields (ISO 8601 format: YYYY-MM-DD)
         if "startDate" in data:
@@ -508,6 +519,56 @@ class OpenProjectClient:
         """
         await self._request("DELETE", f"/work_packages/{work_package_id}")
         return True
+
+    async def add_work_package_comment(
+        self, work_package_id: int, comment: str, internal: bool = False
+    ) -> Dict:
+        """
+        Add a comment/activity to a work package.
+
+        Args:
+            work_package_id: The work package ID
+            comment: Comment text (supports markdown)
+            internal: Whether the comment is internal (visible only to team members)
+
+        Returns:
+            Dict: API response containing the created activity
+        """
+        payload = {
+            "comment": {
+                "format": "markdown",
+                "raw": comment
+            }
+        }
+
+        if internal:
+            payload["internal"] = internal
+
+        return await self._request(
+            "POST", f"/work_packages/{work_package_id}/activities", payload
+        )
+
+    async def get_work_package_activities(self, work_package_id: int) -> Dict:
+        """
+        Retrieve activities (comments, changes) for a work package.
+
+        Args:
+            work_package_id: The work package ID
+
+        Returns:
+            Dict: API response containing activities
+        """
+        result = await self._request(
+            "GET", f"/work_packages/{work_package_id}/activities"
+        )
+
+        # Ensure proper response structure
+        if "_embedded" not in result:
+            result["_embedded"] = {"elements": []}
+        elif "elements" not in result.get("_embedded", {}):
+            result["_embedded"]["elements"] = []
+
+        return result
 
     async def get_time_entries(self, filters: Optional[str] = None) -> Dict:
         """
@@ -1022,29 +1083,34 @@ class OpenProjectClient:
         Create a relationship between work packages.
 
         Args:
-            data: Relation data including from_id, to_id, relation_type, lag
+            data: Relation data including from_id, to_id, type, lag, description
 
         Returns:
             Dict: Created relation data
         """
-        # Prepare payload
+        from_id = data.get("from_id")
+        if not from_id:
+            raise ValueError("from_id is required")
+
+        # Prepare payload according to OpenProject API v3 spec
         payload = {"_links": {}}
 
         # Set required fields
-        if "from_id" in data:
-            payload["_links"]["from"] = {
-                "href": f"/api/v3/work_packages/{data['from_id']}"
-            }
         if "to_id" in data:
-            payload["_links"]["to"] = {"href": f"/api/v3/work_packages/{data['to_id']}"}
-        if "relation_type" in data:
-            payload["type"] = data["relation_type"]
+            payload["_links"]["to"] = {
+                "href": f"/api/v3/work_packages/{data['to_id']}"
+            }
+        if "type" in data:
+            payload["type"] = data["type"]
         if "lag" in data:
             payload["lag"] = data["lag"]
         if "description" in data:
             payload["description"] = data["description"]
 
-        return await self._request("POST", "/relations", payload)
+        # POST to /api/v3/work_packages/{id}/relations
+        return await self._request(
+            "POST", f"/work_packages/{from_id}/relations", payload
+        )
 
     async def list_work_package_relations(self, filters: Optional[str] = None) -> Dict:
         """

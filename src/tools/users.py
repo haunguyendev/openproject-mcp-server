@@ -154,10 +154,7 @@ async def list_project_members(project_id: int) -> str:
     try:
         client = get_client()
 
-        import json
-        filters = json.dumps([{"project": {"operator": "=", "values": [str(project_id)]}}])
-
-        result = await client.get_memberships(filters)
+        result = await client.get_memberships(project_id=project_id)
         memberships = result.get("_embedded", {}).get("elements", [])
 
         if not memberships:
@@ -165,15 +162,22 @@ async def list_project_members(project_id: int) -> str:
 
         text = f"✅ **Project #{project_id} Members ({len(memberships)}):**\n\n"
         for member in memberships:
-            embedded = member.get("_embedded", {})
+            links = member.get("_links", {})
 
-            if "principal" in embedded:
-                name = embedded["principal"].get("name", "Unknown")
-                text += f"- **{name}**\n"
+            # Get principal (user/group) information from _links
+            principal_link = links.get("principal", {})
+            name = principal_link.get("title", "Unknown")
+            # Extract user ID from href: "/api/v3/users/7" -> 7
+            principal_href = principal_link.get("href", "")
+            user_id = principal_href.split("/")[-1] if principal_href else "N/A"
 
-            if "roles" in embedded:
-                roles = [r.get("name", "Unknown") for r in embedded["roles"]]
-                text += f"  Roles: {', '.join(roles)}\n"
+            text += f"- **{name}** (User ID: {user_id})\n"
+
+            # Get roles from _links
+            role_links = links.get("roles", [])
+            if role_links:
+                role_names = [r.get("title", "Unknown") for r in role_links]
+                text += f"  Roles: {', '.join(role_names)}\n"
 
             text += "\n"
 
