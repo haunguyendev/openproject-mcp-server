@@ -29,3 +29,6 @@ if __name__ == "__main__":
         host=host,
         port=port
     )
+
+# Expose app for uvicorn
+app = mcp.sse_app()

@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  openproject-mcp:
+    build: .
+    container_name: openproject-mcp
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount the current directory to allow live reloading if we were using a reloader,
+      # but mostly for visibility of logs/changes in development.
+      - .:/app
+    environment:
+      # Pass necessary environment variables
+      # Mapping from host .env is handled automatically by env_file, 
+      # but we can explicitly override or map specific ones here.
+      - MCP_HTTP_HOST=0.0.0.0
+      - MCP_HTTP_PORT=8000
+      - LOG_LEVEL=INFO
+    env_file:
+      - .env
+    # Restart on failure to keep it running
+    restart: on-failure

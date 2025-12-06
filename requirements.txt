@@ -2,3 +2,5 @@ mcp
 aiohttp
 python-dotenv
 certifi
+uvicorn
+fastmcp
