@@ -32,32 +32,86 @@ def format_project_list(projects: List[Dict]) -> str:
 
 
 def format_work_package_list(work_packages: List[Dict]) -> str:
-    """Format work package list with embedded data.
+    """Format work package list with embedded data and prominent status display.
 
     Args:
         work_packages: List of work package dictionaries from API
 
     Returns:
-        Formatted markdown string
+        Formatted markdown string with enhanced status visibility
     """
     if not work_packages:
         return "No work packages found."
 
     text = f"✅ Found {len(work_packages)} work package(s):\n\n"
     for wp in work_packages:
-        text += f"- **{wp.get('subject', 'No title')}** (#{wp.get('id', 'N/A')})\n"
+        wp_id = wp.get('id', 'N/A')
+        subject = wp.get('subject', 'No title')
 
         # Extract data from both _embedded and _links (OpenProject uses both)
         embedded = wp.get("_embedded", {})
         links = wp.get("_links", {})
 
-        # Type, Status, Priority are in _embedded
-        if "type" in embedded:
-            text += f"  Type: {embedded['type'].get('name', 'Unknown')}\n"
-        if "status" in embedded:
-            text += f"  Status: {embedded['status'].get('name', 'Unknown')}\n"
-        if "priority" in embedded:
-            text += f"  Priority: {embedded['priority'].get('name', 'Unknown')}\n"
+        # Get status - try _embedded first, then _links as fallback
+        status_data = embedded.get("status", {})
+        if not status_data or not status_data.get("name"):
+            # Fallback: try getting from _links
+            status_link = links.get("status", {})
+            status_name = status_link.get("title", "Unknown")
+            is_closed = "closed" in status_name.lower() or "done" in status_name.lower()
+        else:
+            status_name = status_data.get('name', 'Unknown')
+            is_closed = status_data.get('isClosed', False)
+        
+        # Status emoji indicator
+        if is_closed:
+            status_emoji = "✅"
+            status_label = f"{status_name} (CLOSED)"
+        elif "progress" in status_name.lower():
+            status_emoji = "🔄"
+            status_label = status_name
+        elif "blocked" in status_name.lower():
+            status_emoji = "🚫"
+            status_label = status_name
+        elif "new" in status_name.lower() or "open" in status_name.lower():
+            status_emoji = "📋"
+            status_label = status_name
+        else:
+            status_emoji = "⚪"
+            status_label = status_name
+
+        # Main entry with prominent status
+        text += f"### {status_emoji} #{wp_id}: {subject}\n"
+        text += f"**Status**: {status_label}\n"
+
+        # Type - try _embedded first, then _links
+        type_data = embedded.get("type", {})
+        if type_data and type_data.get("name"):
+            text += f"  Type: {type_data.get('name')}\n"
+        elif "type" in links:
+            type_name = links["type"].get("title", "Unknown")
+            text += f"  Type: {type_name}\n"
+            
+        # Priority - try _embedded first, then _links
+        priority_data = embedded.get("priority", {})
+        if priority_data and priority_data.get("name"):
+            priority_name = priority_data.get('name', 'Unknown')
+        elif "priority" in links:
+            priority_name = links["priority"].get("title", "Unknown")
+        else:
+            priority_name = None
+            
+        if priority_name:
+            # Add priority emoji
+            if "immediate" in priority_name.lower() or "urgent" in priority_name.lower():
+                priority_display = f"🔴 {priority_name}"
+            elif "high" in priority_name.lower():
+                priority_display = f"🟠 {priority_name}"
+            elif "low" in priority_name.lower():
+                priority_display = f"🟢 {priority_name}"
+            else:
+                priority_display = priority_name
+            text += f"  Priority: {priority_display}\n"
 
         # Assignee is in _links
         assignee_link = links.get("assignee")

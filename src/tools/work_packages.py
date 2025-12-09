@@ -72,9 +72,19 @@ async def list_work_packages(
 
         # Build filters
         filters_list = []
+        
+        # BUG FIX: active_only filter correction
+        # OpenProject API has special operators for status:
+        # - "o" = open (not closed)
+        # - "c" = closed only
+        # - "*" = all (open + closed)
+        # When active_only=False, we must EXPLICITLY request all statuses!
         if active_only:
-            # Filter for open statuses (not closed)
+            # Filter for open statuses only (not closed)
             filters_list.append({"status": {"operator": "o", "values": []}})
+        else:
+            # Explicitly include ALL statuses (open + closed)
+            filters_list.append({"status": {"operator": "*", "values": []}})
         if assignee_id:
             # Filter by assignee
             filters_list.append({"assignee": {"operator": "=", "values": [str(assignee_id)]}})
@@ -163,9 +173,12 @@ async def search_work_packages(
             }
         })
 
-        # Add active_only filter if requested
+        # Add active_only filter if requested (same fix as list_work_packages)
         if active_only:
             filters_list.append({"status": {"operator": "o", "values": []}})
+        else:
+            # Explicitly include ALL statuses (open + closed)
+            filters_list.append({"status": {"operator": "*", "values": []}})
 
         filters = json.dumps(filters_list)
 
