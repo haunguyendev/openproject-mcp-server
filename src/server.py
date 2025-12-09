@@ -76,8 +76,9 @@ try:
     from src.tools import relations       # 5 tools: create, list, get, update, delete
     from src.tools import time_entries    # 5 tools: list, create, update, delete, list_activities
     from src.tools import versions        # 2 tools: list, create
+    from src.tools import weekly_reports   # 4 tools: generate_weekly_report, get_report_data, generate_this_week_report, generate_last_week_report
 
-    logger.info("✅ All 40 tool modules loaded successfully")
+    logger.info("✅ All 44 tool modules loaded successfully")
 except ImportError as e:
     logger.warning(f"⚠️  Some tool modules failed to import: {e}")
     raise
