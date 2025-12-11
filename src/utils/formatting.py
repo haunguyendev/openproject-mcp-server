@@ -31,11 +31,17 @@ def format_project_list(projects: List[Dict]) -> str:
     return text
 
 
-def format_work_package_list(work_packages: List[Dict]) -> str:
+def format_work_package_list(
+    work_packages: List[Dict],
+    show_days_overdue: bool = False,
+    show_days_until: bool = False
+) -> str:
     """Format work package list with embedded data and prominent status display.
 
     Args:
         work_packages: List of work package dictionaries from API
+        show_days_overdue: If True, show how many days overdue each task is (for overdue filter)
+        show_days_until: If True, show how many days until due (for due soon filter)
 
     Returns:
         Formatted markdown string with enhanced status visibility
@@ -121,11 +127,30 @@ def format_work_package_list(work_packages: List[Dict]) -> str:
         else:
             text += f"  Assignee: Unassigned\n"
 
-        # Date fields
+        # Date fields with enhanced display for overdue/due soon
         if wp.get('startDate'):
             text += f"  Start: {wp['startDate']}\n"
         if wp.get('dueDate'):
-            text += f"  Due: {wp['dueDate']}\n"
+            due_date = wp['dueDate']
+            
+            # Show days overdue if requested
+            if show_days_overdue and '_days_overdue' in wp:
+                days = wp['_days_overdue']
+                if days == 1:
+                    text += f"  Due: {due_date} ⚠️ **{days} day overdue**\n"
+                else:
+                    text += f"  Due: {due_date} ⚠️ **{days} days overdue**\n"
+            # Show days until if requested
+            elif show_days_until and '_days_until' in wp:
+                days = wp['_days_until']
+                if days == 0:
+                    text += f"  Due: {due_date} 🔴 **Due today!**\n"
+                elif days == 1:
+                    text += f"  Due: {due_date} 🟠 **Due tomorrow**\n"
+                else:
+                    text += f"  Due: {due_date} ⏰ **Due in {days} days**\n"
+            else:
+                text += f"  Due: {due_date}\n"
 
         text += "\n"
     return text
