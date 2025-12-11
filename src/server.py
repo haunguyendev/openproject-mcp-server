@@ -64,23 +64,23 @@ def get_client():
 logger.info("Loading tool modules...")
 
 try:
-    # Phase 1: Priority tools (7 tools)
+    # Phase 1: Core Work Package Tools
     from src.tools import connection      # 2 tools: test_connection, check_permissions
-    from src.tools import work_packages   # 7 tools: list, create, update, delete, list_types, list_statuses, list_priorities
-    from src.tools import work_packages_bulk  # 9 tools: bulk_assign, bulk_update_status, bulk_update_priority, bulk_update_work_packages, bulk_update_version, bulk_delete_confirmed, bulk_close, bulk_add_comment, bulk_update_filtered
-    from src.tools import projects        # 5 tools: list, get, create, update, delete
+    from src.tools import work_packages   # 14 tools: list, create, update, delete, list_types, list_statuses, list_priorities, assign, unassign, add_comment, list_activities, get_watchers, add_watcher, get (REMOVED: search)
+    from src.tools import work_packages_bulk  # 2 tools: bulk_add_comment, bulk_update_filtered_work_packages
+    from src.tools import projects        # 8 tools: list, get, create, update, delete, add_subproject, get_subprojects (hierarchy support)
 
-    # Phase 2: Additional tools (28 tools)
-    from src.tools import users           # 6 tools: list_users, get_user, list_roles, get_role, list_project_members, list_user_projects
+    # Phase 2: Extended Functionality
+    from src.tools import users           # 5 tools: list_users, get_user, list_roles, get_role, list_user_projects (REMOVED: list_project_members duplicate)
     from src.tools import memberships     # 5 tools: list, get, create, update, delete
-    from src.tools import hierarchy       # 3 tools: set_parent, remove_parent, list_children
+    from src.tools import hierarchy       # 3 tools: set_work_package_parent, remove_work_package_parent, list_work_package_children
     from src.tools import relations       # 5 tools: create, list, get, update, delete
     from src.tools import time_entries    # 5 tools: list, create, update, delete, list_activities
-    from src.tools import versions        # 2 tools: list, create
-    from src.tools import weekly_reports   # 4 tools: generate_weekly_report, get_report_data, generate_this_week_report, generate_last_week_report
-    from src.tools import news             # 5 tools: list_news, create_news, get_news, update_news, delete_news
+    from src.tools import versions        # 5 tools: list, get, create, update, delete (ADDED: get, update, delete)
+    from src.tools import weekly_reports  # 4 tools: generate_weekly_report, get_report_data, generate_this_week_report, generate_last_week_report
+    from src.tools import news            # 5 tools: list_news, create_news, get_news, update_news, delete_news (KEPT: daily announcements use case)
 
-    logger.info("✅ All 58 tool modules loaded successfully")  # Updated count: 49 + 9 = 58
+    logger.info("✅ All 59 tool modules loaded successfully")  # 14+2+8+5+5+3+5+5+5+4+5 = 59 tools
 except ImportError as e:
     logger.warning(f"⚠️  Some tool modules failed to import: {e}")
     raise
