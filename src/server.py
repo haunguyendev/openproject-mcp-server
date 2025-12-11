@@ -67,6 +67,7 @@ try:
     # Phase 1: Priority tools (7 tools)
     from src.tools import connection      # 2 tools: test_connection, check_permissions
     from src.tools import work_packages   # 7 tools: list, create, update, delete, list_types, list_statuses, list_priorities
+    from src.tools import work_packages_bulk  # 9 tools: bulk_assign, bulk_update_status, bulk_update_priority, bulk_update_work_packages, bulk_update_version, bulk_delete_confirmed, bulk_close, bulk_add_comment, bulk_update_filtered
     from src.tools import projects        # 5 tools: list, get, create, update, delete
 
     # Phase 2: Additional tools (28 tools)
@@ -79,7 +80,7 @@ try:
     from src.tools import weekly_reports   # 4 tools: generate_weekly_report, get_report_data, generate_this_week_report, generate_last_week_report
     from src.tools import news             # 5 tools: list_news, create_news, get_news, update_news, delete_news
 
-    logger.info("✅ All 49 tool modules loaded successfully")
+    logger.info("✅ All 58 tool modules loaded successfully")  # Updated count: 49 + 9 = 58
 except ImportError as e:
     logger.warning(f"⚠️  Some tool modules failed to import: {e}")
     raise
