@@ -732,3 +732,308 @@ async def list_work_package_activities(work_package_id: int) -> str:
 
     except Exception as e:
         return format_error(f"Failed to list activities: {str(e)}")
+
+
+# ============================================================================
+# ADVANCED FILTERS - New high-priority tools for better task discovery
+# ============================================================================
+
+@mcp.tool
+async def list_overdue_work_packages(
+    project_id: Optional[int] = None,
+    assignee_id: Optional[int] = None,
+    priority_ids: Optional[str] = None,  # Comma-separated IDs like "3,4"
+    type_ids: Optional[str] = None,  # Comma-separated IDs like "1,2"
+    page_size: int = 50
+) -> str:
+    """List all overdue work packages (tasks past their due date).
+    
+    This tool helps identify tasks that are past their due date and need urgent attention.
+    Only searches through open (non-closed) work packages.
+    
+    Args:
+        project_id: Optional project ID to filter by
+        assignee_id: Optional user ID to filter by assignee
+        priority_ids: Optional comma-separated priority IDs (e.g., "3" for high, or "3,4" for high+urgent)
+        type_ids: Optional comma-separated type IDs (e.g., "1" for bugs, or "1,2" for bugs+features)
+        page_size: Number of results to return (default: 50, max: 100)
+    
+    Returns:
+        Formatted list of overdue work packages sorted by most overdue first
+        
+    Example:
+        Find all high-priority overdue tasks assigned to user #5:
+        {
+            "assignee_id": 5,
+            "priority_ids": "3"
+        }
+    """
+    try:
+        from datetime import date, datetime
+        
+        client = get_client()
+        
+        # Build filters list
+        filters_list = [
+            # Status must be open (not closed)
+            {"status": {"operator": "o", "values": []}},
+            # Due date < today (overdue)
+            # Note: OpenProject API doesn't support "<d" operator with single value
+            # Workaround: Use "<>d" (between) with old start date and today
+            {"dueDate": {"operator": "<>d", "values": ["2000-01-01", date.today().isoformat()]}}
+        ]
+        
+        # Add optional filters
+        if assignee_id:
+            filters_list.append({"assignee": {"operator": "=", "values": [str(assignee_id)]}})
+        
+        if priority_ids:
+            # Parse comma-separated IDs
+            priority_list = [p.strip() for p in priority_ids.split(",") if p.strip()]
+            if priority_list:
+                filters_list.append({"priority": {"operator": "=", "values": priority_list}})
+        
+        if type_ids:
+            # Parse comma-separated IDs
+            type_list = [t.strip() for t in type_ids.split(",") if t.strip()]
+            if type_list:
+                filters_list.append({"type": {"operator": "=", "values": type_list}})
+        
+        filters = json.dumps(filters_list)
+        
+        # Validate page_size
+        if page_size < 1 or page_size > 100:
+            return format_error("page_size must be between 1 and 100")
+        
+        result = await client.get_work_packages(
+            project_id=project_id,
+            filters=filters,
+            page_size=page_size
+        )
+        
+        work_packages = result.get("_embedded", {}).get("elements", [])
+        total = result.get("total", 0)
+        
+        if not work_packages:
+            return "✅ No overdue work packages found!"
+        
+        # Calculate days overdue for each task
+        today = date.today()
+        for wp in work_packages:
+            due_date_str = wp.get("dueDate")
+            if due_date_str:
+                try:
+                    due_date = datetime.strptime(due_date_str, "%Y-%m-%d").date()
+                    days_overdue = (today - due_date).days
+                    wp["_days_overdue"] = days_overdue
+                except:
+                    wp["_days_overdue"] = 0
+            else:
+                wp["_days_overdue"] = 0
+        
+        # Sort by most overdue first
+        work_packages.sort(key=lambda w: w.get("_days_overdue", 0), reverse=True)
+        
+        # Format response
+        text = f"⚠️ **Overdue Work Packages**: {total} task(s) past due date\n\n"
+        text += format_work_package_list(work_packages, show_days_overdue=True)
+        
+        return text
+        
+    except Exception as e:
+        return format_error(f"Failed to list overdue work packages: {str(e)}")
+
+
+@mcp.tool
+async def list_work_packages_due_soon(
+    days: int = 7,
+    project_id: Optional[int] = None,
+    assignee_id: Optional[int] = None,
+    priority_ids: Optional[str] = None,
+    page_size: int = 50
+) -> str:
+    """List work packages due within the next N days.
+    
+    This helps identify upcoming deadlines and prioritize work accordingly.
+    Only searches through open (non-closed) work packages.
+    
+    Args:
+        days: Number of days to look ahead (default: 7)
+        project_id: Optional project ID to filter by
+        assignee_id: Optional user ID to filter by assignee
+        priority_ids: Optional comma-separated priority IDs (e.g., "3,4")
+        page_size: Number of results to return (default: 50)
+    
+    Returns:
+        Formatted list of work packages due soon, sorted by soonest first
+        
+    Example:
+        Show my tasks due in the next 3 days:
+        {
+            "days": 3,
+            "assignee_id": 5
+        }
+    """
+    try:
+        from datetime import date, timedelta, datetime
+        
+        client = get_client()
+        
+        # Validate days parameter
+        if days < 1:
+            return format_error("days must be at least 1")
+        if days > 365:
+            return format_error("days cannot exceed 365")
+        
+        # Calculate date range
+        today = date.today()
+        target_date = today + timedelta(days=days)
+        
+        # Build filters
+        filters_list = [
+            # Status must be open
+            {"status": {"operator": "o", "values": []}},
+            # Due date between today and target_date
+            {"dueDate": {"operator": "<>d", "values": [today.isoformat(), target_date.isoformat()]}}
+        ]
+        
+        # Add optional filters
+        if assignee_id:
+            filters_list.append({"assignee": {"operator": "=", "values": [str(assignee_id)]}})
+        
+        if priority_ids:
+            priority_list = [p.strip() for p in priority_ids.split(",") if p.strip()]
+            if priority_list:
+                filters_list.append({"priority": {"operator": "=", "values": priority_list}})
+        
+        filters = json.dumps(filters_list)
+        
+        # Validate page_size
+        if page_size < 1 or page_size > 100:
+            return format_error("page_size must be between 1 and 100")
+        
+        result = await client.get_work_packages(
+            project_id=project_id,
+            filters=filters,
+            page_size=page_size
+        )
+        
+        work_packages = result.get("_embedded", {}).get("elements", [])
+        total = result.get("total", 0)
+        
+        if not work_packages:
+            return f"✅ No work packages due in the next {days} day(s)!"
+        
+        # Calculate days until due
+        for wp in work_packages:
+            due_date_str = wp.get("dueDate")
+            if due_date_str:
+                try:
+                    due_date = datetime.strptime(due_date_str, "%Y-%m-%d").date()
+                    days_until = (due_date - today).days
+                    wp["_days_until"] = days_until
+                except:
+                    wp["_days_until"] = 999
+            else:
+                wp["_days_until"] = 999
+        
+        # Sort by soonest first
+        work_packages.sort(key=lambda w: w.get("_days_until", 999))
+        
+        # Format response
+        text = f"⏰ **Work Packages Due Soon**: {total} task(s) due in next {days} day(s)\n\n"
+        text += format_work_package_list(work_packages, show_days_until=True)
+        
+        return text
+        
+    except Exception as e:
+        return format_error(f"Failed to list work packages due soon: {str(e)}")
+
+
+@mcp.tool
+async def list_unassigned_work_packages(
+    project_id: Optional[int] = None,
+    priority_ids: Optional[str] = None,
+    type_ids: Optional[str] = None,
+    active_only: bool = True,
+    page_size: int = 50
+) -> str:
+    """List work packages that have no assignee.
+    
+    This helps identify tasks that need to be assigned to team members.
+    Useful for sprint planning and workload distribution.
+    
+    Args:
+        project_id: Optional project ID to filter by
+        priority_ids: Optional comma-separated priority IDs (e.g., "3,4" for high+urgent)
+        type_ids: Optional comma-separated type IDs (e.g., "1" for bugs only)
+        active_only: If True, only show open work packages (default: True)
+        page_size: Number of results to return (default: 50, max: 100)
+    
+    Returns:
+        Formatted list of unassigned work packages
+        
+    Example:
+        Find all unassigned high-priority bugs in project #5:
+        {
+            "project_id": 5,
+            "priority_ids": "3",
+            "type_ids": "1"
+        }
+    """
+    try:
+        client = get_client()
+        
+        # Build filters list
+        filters_list = [
+            # Assignee must be empty (unassigned)
+            {"assignee": {"operator": "!*", "values": []}}
+        ]
+        
+        # Add status filter
+        if active_only:
+            filters_list.append({"status": {"operator": "o", "values": []}})
+        else:
+            filters_list.append({"status": {"operator": "*", "values": []}})
+        
+        # Add optional filters
+        if priority_ids:
+            priority_list = [p.strip() for p in priority_ids.split(",") if p.strip()]
+            if priority_list:
+                filters_list.append({"priority": {"operator": "=", "values": priority_list}})
+        
+        if type_ids:
+            type_list = [t.strip() for t in type_ids.split(",") if t.strip()]
+            if type_list:
+                filters_list.append({"type": {"operator": "=", "values": type_list}})
+        
+        filters = json.dumps(filters_list)
+        
+        # Validate page_size
+        if page_size < 1 or page_size > 100:
+            return format_error("page_size must be between 1 and 100")
+        
+        result = await client.get_work_packages(
+            project_id=project_id,
+            filters=filters,
+            page_size=page_size
+        )
+        
+        work_packages = result.get("_embedded", {}).get("elements", [])
+        total = result.get("total", 0)
+        
+        if not work_packages:
+            return "✅ No unassigned work packages found!"
+        
+        # Format response
+        text = f"👤 **Unassigned Work Packages**: {total} task(s) without assignee\n\n"
+        text += format_work_package_list(work_packages)
+        
+        if total > page_size:
+            text += f"\n📄 Showing first {page_size} of {total} total unassigned tasks\n"
+        
+        return text
+        
+    except Exception as e:
+        return format_error(f"Failed to list unassigned work packages: {str(e)}")
+
