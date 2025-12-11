@@ -141,51 +141,6 @@ async def get_role(role_id: int) -> str:
         return format_error(f"Failed to get role: {str(e)}")
 
 
-@mcp.tool
-async def list_project_members(project_id: int) -> str:
-    """List all members of a specific project.
-
-    Args:
-        project_id: The project ID
-
-    Returns:
-        List of project members with their roles
-    """
-    try:
-        client = get_client()
-
-        result = await client.get_memberships(project_id=project_id)
-        memberships = result.get("_embedded", {}).get("elements", [])
-
-        if not memberships:
-            return f"No members found for project #{project_id}."
-
-        text = f"✅ **Project #{project_id} Members ({len(memberships)}):**\n\n"
-        for member in memberships:
-            links = member.get("_links", {})
-
-            # Get principal (user/group) information from _links
-            principal_link = links.get("principal", {})
-            name = principal_link.get("title", "Unknown")
-            # Extract user ID from href: "/api/v3/users/7" -> 7
-            principal_href = principal_link.get("href", "")
-            user_id = principal_href.split("/")[-1] if principal_href else "N/A"
-
-            text += f"- **{name}** (User ID: {user_id})\n"
-
-            # Get roles from _links
-            role_links = links.get("roles", [])
-            if role_links:
-                role_names = [r.get("title", "Unknown") for r in role_links]
-                text += f"  Roles: {', '.join(role_names)}\n"
-
-            text += "\n"
-
-        return text
-
-    except Exception as e:
-        return format_error(f"Failed to list project members: {str(e)}")
-
 
 @mcp.tool
 async def list_user_projects(user_id: int) -> str:

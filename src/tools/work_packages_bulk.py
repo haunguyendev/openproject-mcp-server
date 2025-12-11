@@ -19,7 +19,9 @@ from src.utils.bulk_operations import (
 from src.utils.formatting import format_success, format_error
 
 
-# ... [Previous 7 tools remain unchanged] ...
+# This module contains 2 bulk operation tools:
+# 1. bulk_add_comment - Add same comment to multiple work packages
+# 2. bulk_update_filtered_work_packages - Most powerful bulk update with filtering
 
 
 @mcp.tool

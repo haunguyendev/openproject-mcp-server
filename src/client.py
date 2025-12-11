@@ -782,6 +782,67 @@ class OpenProjectClient:
 
         return await self._request("POST", "/versions", payload)
 
+    async def get_version(self, version_id: int) -> Dict:
+        """
+        Retrieve a specific version by ID.
+
+        Args:
+            version_id: The version ID
+
+        Returns:
+            Dict: Version data
+        """
+        return await self._request("GET", f"/versions/{version_id}")
+
+    async def update_version(self, version_id: int, data: Dict) -> Dict:
+        """
+        Update an existing version.
+
+        Args:
+            version_id: The version ID
+            data: Update data including fields to modify
+
+        Returns:
+            Dict: Updated version data
+        """
+        # First get current version to get lock version
+        try:
+            current_version = await self.get_version(version_id)
+            lock_version = current_version.get("lockVersion", 0)
+        except:
+            lock_version = 0
+
+        # Prepare payload with lock version
+        payload = {"lockVersion": lock_version}
+
+        # Add fields to update
+        if "name" in data:
+            payload["name"] = data["name"]
+        if "description" in data:
+            payload["description"] = {"raw": data["description"]}
+        if "start_date" in data:
+            payload["startDate"] = data["start_date"]
+        if "due_date" in data:
+            payload["endDate"] = data["due_date"]
+        if "status" in data:
+            payload["status"] = data["status"]
+
+        return await self._request("PATCH", f"/versions/{version_id}", payload)
+
+    async def delete_version(self, version_id: int) -> bool:
+        """
+        Delete a version.
+
+        Args:
+            version_id: The version ID
+
+        Returns:
+            bool: True if successful
+        """
+        await self._request("DELETE", f"/versions/{version_id}")
+        return True
+
+
     async def check_permissions(self) -> Dict:
         """
         Check user permissions and capabilities.
