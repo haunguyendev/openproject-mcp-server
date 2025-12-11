@@ -132,9 +132,14 @@
 - ✅ get_work_package
 - ❌ ~~search_work_packages~~ (REMOVED)
 
-### Work Package Bulk Operations (2 tools)
+### Work Package Bulk Operations (7 tools)
+- ✅ bulk_create_work_packages - Create multiple work packages at once with template
 - ✅ bulk_add_comment - Add same comment to multiple WPs
 - ✅ bulk_update_filtered_work_packages - Most powerful bulk tool
+- ✅ bulk_set_work_package_parents - Set same parent for multiple WPs
+- ✅ bulk_remove_work_package_parents - Remove parent from multiple WPs
+- ✅ bulk_create_work_package_relations - Create multiple relations at once
+- ✅ bulk_delete_work_package_relations - Delete multiple relations at once
 
 ### Projects (8 tools)
 - ✅ list_projects
