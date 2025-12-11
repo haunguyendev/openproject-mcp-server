@@ -521,8 +521,42 @@ class OpenProjectClient:
         return True
 
     async def add_work_package_comment(
-        self, work_package_id: int, comment: str, internal: bool = False
+        self,
+        work_package_id: int,
+        comment: str,
+        internal: bool = False
     ) -> Dict:
+        """Add a comment/activity to a work package.
+        
+        Args:
+            work_package_id: Work package ID
+            comment: Comment text (supports markdown)
+            internal: If True, comment is only visible to project members (default: False)
+                     Note: This parameter is for future compatibility as the API
+                     determines visibility based on project permissions
+        
+        Returns:
+            Dict: API response with created activity
+            
+        Example:
+            >>> await client.add_work_package_comment(10, "Please review by Friday")
+        """
+        endpoint = f"/work_packages/{work_package_id}/activities"
+        
+        # Build comment data
+        data = {
+            "comment": {
+                "raw": comment
+            }
+        }
+        
+        # Note: 'internal' flag is not fully supported in OpenProject Activity API v3
+        # Comments are visible based on project permissions
+        # Keeping parameter for API consistency and future compatibility
+        
+        url = f"{self.base_url}{endpoint}"
+        return await self._request("POST", url, data=data)
+
         """
         Add a comment/activity to a work package.
 
