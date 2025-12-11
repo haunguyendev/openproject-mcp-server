@@ -281,3 +281,117 @@ def format_success(message: str) -> str:
         Formatted success string with ✅ prefix
     """
     return f"✅ {message}"
+
+
+def format_news_list(news_items: List[Dict]) -> str:
+    """Format news list with project, author, and dates.
+
+    Args:
+        news_items: List of news dictionaries from API
+
+    Returns:
+        Formatted markdown string
+    """
+    if not news_items:
+        return "No news entries found."
+
+    text = f"📰 News List ({len(news_items)} item{'s' if len(news_items) != 1 else ''}):\n\n"
+    
+    for news in news_items:
+        news_id = news.get('id', 'N/A')
+        title = news.get('title', 'No title')
+        summary = news.get('summary', '')
+        created_at = news.get('createdAt', 'Unknown')
+        
+        # Format date to be more readable (YYYY-MM-DD)
+        if created_at and created_at != 'Unknown':
+            try:
+                created_date = created_at.split('T')[0]
+            except:
+                created_date = created_at
+        else:
+            created_date = created_at
+        
+        # Extract project and author from _links
+        links = news.get('_links', {})
+        project_name = links.get('project', {}).get('title', 'Unknown Project')
+        author_name = links.get('author', {}).get('title', 'Unknown Author')
+        
+        # Build formatted entry
+        text += f"**{news_id}. {title}**\n"
+        text += f"   📁 Project: {project_name}\n"
+        text += f"   👤 Author: {author_name}\n"
+        text += f"   📅 Created: {created_date}\n"
+        
+        if summary:
+            # Truncate summary if too long
+            summary_preview = summary[:150] + '...' if len(summary) > 150 else summary
+            text += f"   📝 {summary_preview}\n"
+        
+        text += "\n"
+    
+    return text
+
+
+def format_news_detail(news_item: Dict) -> str:
+    """Format detailed news entry with full content.
+
+    Args:
+        news_item: News dictionary from API
+
+    Returns:
+        Formatted markdown string
+    """
+    text = f"📰 News Entry #{news_item.get('id')}\n\n"
+    
+    # Title
+    title = news_item.get('title', 'No title')
+    text += f"# {title}\n\n"
+    
+    # Metadata
+    links = news_item.get('_links', {})
+    project_name = links.get('project', {}).get('title', 'Unknown Project')
+    author_name = links.get('author', {}).get('title', 'Unknown Author')
+    created_at = news_item.get('createdAt', 'Unknown')
+    
+    # Format date
+    if created_at and created_at != 'Unknown':
+        try:
+            created_date = created_at.split('T')[0]
+            created_time = created_at.split('T')[1].split('.')[0] if 'T' in created_at else ''
+            created_display = f"{created_date} {created_time}"
+        except:
+            created_display = created_at
+    else:
+        created_display = created_at
+    
+    text += f"**Project**: {project_name}\n"
+    text += f"**Author**: {author_name}\n"
+    text += f"**Created**: {created_display}\n\n"
+    
+    # Summary
+    summary = news_item.get('summary', '')
+    if summary:
+        text += f"## Summary\n\n{summary}\n\n"
+    
+    # Description (full content with markdown)
+    description = news_item.get('description', {})
+    if description:
+        if isinstance(description, dict):
+            desc_text = description.get('raw', '')
+        else:
+            desc_text = str(description)
+        
+        if desc_text:
+            text += f"## Description\n\n{desc_text}\n\n"
+    
+    # Links section
+    text += f"---\n"
+    text += f"**Links**:\n"
+    if 'self' in links:
+        text += f"- [View in OpenProject]({links['self'].get('href', '#')})\n"
+    if 'project' in links:
+        text += f"- [Project]({links['project'].get('href', '#')})\n"
+    
+    return text
+
