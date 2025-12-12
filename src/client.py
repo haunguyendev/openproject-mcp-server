@@ -544,43 +544,18 @@ class OpenProjectClient:
         endpoint = f"/work_packages/{work_package_id}/activities"
         
         # Build comment data
-        data = {
-            "comment": {
-                "raw": comment
-            }
-        }
-        
-        # Note: 'internal' flag is not fully supported in OpenProject Activity API v3
-        # Comments are visible based on project permissions
-        # Keeping parameter for API consistency and future compatibility
-        
-        url = f"{self.base_url}{endpoint}"
-        return await self._request("POST", url, data=data)
-
-        """
-        Add a comment/activity to a work package.
-
-        Args:
-            work_package_id: The work package ID
-            comment: Comment text (supports markdown)
-            internal: Whether the comment is internal (visible only to team members)
-
-        Returns:
-            Dict: API response containing the created activity
-        """
         payload = {
             "comment": {
                 "format": "markdown",
                 "raw": comment
             }
         }
-
+        
+        # Add internal flag if specified
         if internal:
             payload["internal"] = internal
-
-        return await self._request(
-            "POST", f"/work_packages/{work_package_id}/activities", payload
-        )
+        
+        return await self._request("POST", endpoint, payload)
 
     async def get_work_package_activities(self, work_package_id: int) -> Dict:
         """

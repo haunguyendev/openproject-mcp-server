@@ -484,6 +484,37 @@ async def delete_work_package(work_package_id: int) -> str:
 
 
 @mcp.tool
+async def get_work_package(work_package_id: int) -> str:
+    """Get detailed information about a specific work package by ID.
+    
+    This tool retrieves comprehensive details about a single work package including
+    subject, description, status, priority, assignee, dates, and progress.
+    
+    Args:
+        work_package_id: ID of the work package to retrieve
+    
+    Returns:
+        Formatted work package details including all metadata
+        
+    Example:
+        To get details of work package #123:
+        {
+            "work_package_id": 123
+        }
+    """
+    try:
+        client = get_client()
+        
+        result = await client.get_work_package(work_package_id)
+        
+        # Use the dedicated formatter for detailed work package view
+        return format_work_package_detail(result)
+        
+    except Exception as e:
+        return format_error(f"Failed to get work package: {str(e)}")
+
+
+@mcp.tool
 async def list_types(project_id: Optional[int] = None) -> str:
     """List available work package types (Bug, Task, Feature, etc.).
 
